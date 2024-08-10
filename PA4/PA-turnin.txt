@@ -1,0 +1,793 @@
+'''
+Written by: Alicia John
+Date:11/7/20
+
+Overall - This computes word similarity from a word by word PMI co-occurance matrix
+
+Example -
+
+0.07343319470668533 new advancement 2009 1 1 14.52144743504305 
+
+0.5236640692371516 election results 183 373 2 10.434977625237062 
+
+0.7575478994396204 union workers 174 167 1 10.66706149545356 
+
+0.1990335161249143 fire wildfire 195 1 0 0 
+
+0.44228202041261877 ocean sea 48 75 0 0 
+
+0.0 spiderman batman 1 5 0 0 
+
+
+Algorithm - This program tokenizes an input and creates a matrix of the co-occurance of every unique word. The command line input takes in the window size, the text file to parse through and the 
+amount of tokens in the corpus to count. The window size is used to count how many can be co-occurances when they occur with up to and including 3 intervening words between them. With the matrix the PMI is cacluted with the probability of word 1, word 2 and the probabilty of the co-occurance of word one and two. The cosine of the word vectors are used to determine the similarity of word one and two. The output is the cosine, word 1, word 2, count of word 1, count of word 2, co-occurance of word one and two and the PMI of word one and word two. 
+
+'''
+
+import sys
+import os
+import re
+import math 
+import numpy as np
+
+def main(argv):
+# Get the command line inputs
+	windowSize = sys.argv[1]
+	path = sys.argv[2]
+	wordPairs = sys.argv[3]
+	tokenLimit = sys.argv[4]
+	allTokens =""
+#Get and proccess all of the files in the directory that was passed in
+	with os.scandir(path) as entries:
+		for entry in entries:
+			f = open(entry, "r", encoding = "ascii", errors='ignore')
+			text = f.read()
+			allTokens += text
+			f.close
+	allTokens = allTokens.lower() # make all letters lowercase
+	allTokens = re.sub(r'([^a-z0-9])', '\n', allTokens)# only alphanumeric characters
+	tokens = allTokens.split() #tokenization
+	f = open(wordPairs, "r") # Get all of the word pairs to calculate PMI and cosine
+	pairs = f.read()
+	pairs = pairs.split("\n")
+	del pairs[-1]
+	if(tokenLimit == 'f'): #if the full corpus is being processed change it to the amount of words in the corpus
+		tokenLimit = len(tokens)
+#Time to make the matrix
+	keyIndex = dict()
+	count = []
+	i = 0
+	t = 0 
+	for x in tokens: # for every token if the word is not in the dictionary add it
+		if(x not in keyIndex):
+			keyIndex[x] = i
+			count.append(0)
+			i+=1 # i is equal to the index the key word is associated with
+	print("PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = %s , Window Size = %s, Corpus Size = %s \n" % (i, windowSize, tokenLimit))
+	matrix = np.zeros((i,i), int) # make an matrix of zeros i is equal to the number of unique words
+	t = 0
+	for t in range(int(tokenLimit)): # for every word up to the limit count the co-occurances of the word pair.
+		if(tokens[t] in keyIndex):
+			w=0 # is used to get the following word(s) to calcuate the co-occurance
+			indexone = keyIndex[tokens[t]] # this is used to find the row word 1 is located
+			num = count[indexone]
+			num +=1
+			count[indexone] = num
+			for w in range(int(windowSize)):
+				if(((t+w+1) < (len(tokens)-1)) and(tokens[t+(w+1)] in keyIndex)):
+					indextwo = keyIndex[tokens[t+(w+1)]] # this is used to find the column word two is located at
+					# Get and increment the location of the matrix of the co-occurance
+					value = matrix[indexone, indextwo] 
+					value +=1
+					matrix[indexone,indextwo] = value 
+	
+	for x in pairs: # for every word pair
+		vectorwords = x.split() # split into two words
+		pmi = 0
+		cosine = -9999
+		if((vectorwords[0] in keyIndex) and (vectorwords[1] in keyIndex)): # if the words are in the matrix
+		# Calculate the PMI and cosine
+			indexone = keyIndex[vectorwords[0]] #Gets the indexes the key are in the matrix and total counts
+			indextwo = keyIndex[vectorwords[1]]
+			#probability of word 1, word 2 and the co-occurance
+			px = count[indexone]/len(tokens)
+			py = count[indextwo]/len(tokens)
+			pxy = matrix[indexone,indextwo]/len(tokens)
+			if(pxy == 0): #if there are no co-occurances set pmi to 0
+				pmi =  0
+			else:
+				pmi = math.log((pxy/(px*py)), 2) # calulated the pmi
+				t=0
+			#Calcuting the cosine
+			vwsum = 0
+			v2sum = 0
+			w2sum = 0
+			for t in range(i):
+				v = matrix[indexone, t]
+				w = matrix[indextwo, t]
+				vwsum += (v*w)
+				v2sum += (v*v)
+				w2sum += (w*w)
+			cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+			if(math.isnan(cosine)): # if it divides by zero set cosine to -9999
+				cosine = -9999
+			print("%s %s %s %s %s %s %s \n"% (cosine, vectorwords[0], vectorwords[1], count[indexone], count[indextwo], matrix[indexone,indextwo], pmi )) # output
+		else: # if the word is not in the key list set cosine to -9999 and find counts for other word if it occurs
+			count1 = 0 
+			count2 = 0
+			cosine = -9999
+			if(vectorwords[0] in keyIndex):
+				count1 = count[keyIndex[vectorwords[0]]]
+			if(vectorwords[1] in keyIndex):
+				count2 = count[keyIndex[vectorwords[1]]]
+			print("%s %s %s %s %s %s %s \n"% (cosine, vectorwords[0], vectorwords[1], count1, count2, 0, pmi ))	
+
+main(sys.argv)
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 2, Corpus Size = 10000 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line cord 4 0 0 0 
+
+-9999 line queue 4 0 0 0 
+
+-9999 line text 4 0 0 0 
+
+-9999 car automobile 2 0 0 0 
+
+-9999 swedish finnish 0 0 0 0 
+
+-9999 scientific interest 0 4 0 0 
+
+-9999 abdullah shah 0 0 0 0 
+
+-9999 baseball football 0 1 0 0 
+
+-9999 baseball soccer 0 0 0 0 
+
+0.2886751345948129 clinton bush 1 2 0 0 
+
+0.0 clinton gore 1 1 0 0 
+
+0.9999999999999998 clinton clinton 1 1 0 0 
+
+-9999 russia germany 1 0 0 0 
+
+0.0 russia mexico 1 2 0 0 
+
+0.0 mexico russia 2 1 0 0 
+
+-9999 duluth minnesota 0 0 0 0 
+
+-9999 duluth fargo 0 1 0 0 
+
+-9999 duluth paris 0 0 0 0 
+
+-9999 woman homemaker 0 0 0 0 
+
+-9999 man homemaker 0 0 0 0 
+
+-9999 woman surgeon 0 0 0 0 
+
+-9999 man surgeon 0 0 0 0 
+
+-9999 boy brave 0 0 0 0 
+
+-9999 girl brave 1 0 0 0 
+
+-9999 king queen 2 0 0 0 
+
+-9999 king man 2 0 0 0 
+
+-9999 king woman 2 0 0 0 
+
+-9999 queen man 0 0 0 0 
+
+-9999 queen woman 0 0 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.20619652471058064 military officials 6 16 0 0 
+
+-9999 corrupt politician 0 0 0 0 
+
+0.40824829046386296 democrats republicans 3 5 0 0 
+
+-9999 human rights 0 2 0 0 
+
+-9999 new advancement 28 0 0 0 
+
+-9999 election results 0 0 0 0 
+
+0.0 union workers 3 2 0 0 
+
+-9999 fire wildfire 1 0 0 0 
+
+-9999 ocean sea 0 0 0 0 
+
+-9999 spiderman batman 0 0 0 0 
+
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 5, Corpus Size = 10000 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line cord 4 0 0 0 
+
+-9999 line queue 4 0 0 0 
+
+-9999 line text 4 0 0 0 
+
+-9999 car automobile 2 0 0 0 
+
+-9999 swedish finnish 0 0 0 0 
+
+-9999 scientific interest 0 4 0 0 
+
+-9999 abdullah shah 0 0 0 0 
+
+-9999 baseball football 0 1 0 0 
+
+-9999 baseball soccer 0 0 0 0 
+
+0.12909944487358055 clinton bush 1 2 0 0 
+
+0.0 clinton gore 1 1 0 0 
+
+0.9999999999999998 clinton clinton 1 1 0 0 
+
+-9999 russia germany 1 0 0 0 
+
+0.28284271247461895 russia mexico 1 2 0 0 
+
+0.28284271247461895 mexico russia 2 1 0 0 
+
+-9999 duluth minnesota 0 0 0 0 
+
+-9999 duluth fargo 0 1 0 0 
+
+-9999 duluth paris 0 0 0 0 
+
+-9999 woman homemaker 0 0 0 0 
+
+-9999 man homemaker 0 0 0 0 
+
+-9999 woman surgeon 0 0 0 0 
+
+-9999 man surgeon 0 0 0 0 
+
+-9999 boy brave 0 0 0 0 
+
+-9999 girl brave 1 0 0 0 
+
+-9999 king queen 2 0 0 0 
+
+-9999 king man 2 0 0 0 
+
+-9999 king woman 2 0 0 0 
+
+-9999 queen man 0 0 0 0 
+
+-9999 queen woman 0 0 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.2716256390786371 military officials 6 16 0 0 
+
+-9999 corrupt politician 0 0 0 0 
+
+0.2130071614211525 democrats republicans 3 5 0 0 
+
+-9999 human rights 0 2 0 0 
+
+-9999 new advancement 28 0 0 0 
+
+-9999 election results 0 0 0 0 
+
+0.0816496580927726 union workers 3 2 0 0 
+
+-9999 fire wildfire 1 0 0 0 
+
+-9999 ocean sea 0 0 0 0 
+
+-9999 spiderman batman 0 0 0 0 
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 2, Corpus Size = 100000 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line cord 37 0 0 0 
+
+-9999 line queue 37 0 0 0 
+
+0.08660254037844385 line text 37 4 0 0 
+
+0.29814239699997197 car automobile 28 1 0 0 
+
+-9999 swedish finnish 1 0 0 0 
+
+0.1033622788243404 scientific interest 6 31 0 0 
+
+-9999 abdullah shah 0 0 0 0 
+
+0.0601929265428846 baseball football 3 17 0 0 
+
+0.16666666666666669 baseball soccer 3 3 0 0 
+
+0.4050462936504913 clinton bush 22 11 0 0 
+
+0.2672612419124244 clinton gore 22 3 0 0 
+
+1.0 clinton clinton 22 22 0 0 
+
+0.24514516892273006 russia germany 7 7 0 0 
+
+0.0 russia mexico 7 4 0 0 
+
+0.0 mexico russia 4 7 0 0 
+
+-9999 duluth minnesota 0 7 0 0 
+
+-9999 duluth fargo 0 2 0 0 
+
+-9999 duluth paris 0 1 0 0 
+
+-9999 woman homemaker 14 0 0 0 
+
+-9999 man homemaker 32 0 0 0 
+
+0.1203858530857692 woman surgeon 14 3 0 0 
+
+0.1147078669352809 man surgeon 32 3 0 0 
+
+0.0 boy brave 8 1 0 0 
+
+0.15811388300841897 girl brave 9 1 0 0 
+
+0.0 king queen 6 1 0 0 
+
+0.05006261743217589 king man 6 32 0 0 
+
+0.03940552031195503 king woman 6 14 0 0 
+
+0.0 queen man 1 32 0 0 
+
+0.0 queen woman 1 14 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.40456998550119533 military officials 48 125 7 15.7503174204507 
+
+0.0 corrupt politician 2 1 0 0 
+
+0.5020692091869888 democrats republicans 39 53 4 16.480386610350894 
+
+0.24287224646833394 human rights 16 22 7 19.84163258719665 
+
+-9999 new advancement 242 0 0 0 
+
+0.3432032364918221 election results 22 8 0 0 
+
+0.12309149097933272 union workers 24 20 0 0 
+
+-9999 fire wildfire 12 0 0 0 
+
+0.0 ocean sea 2 1 0 0 
+
+-9999 spiderman batman 0 0 0 0 
+
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 5, Corpus Size = 100000 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line cord 37 0 0 0 
+
+-9999 line queue 37 0 0 0 
+
+0.20476503894465037 line text 37 4 0 0 
+
+0.202072594216369 car automobile 28 1 0 0 
+
+-9999 swedish finnish 1 0 0 0 
+
+0.1528881073686681 scientific interest 6 31 0 0 
+
+-9999 abdullah shah 0 0 0 0 
+
+0.12618303506026082 baseball football 3 17 0 0 
+
+0.18786728732554484 baseball soccer 3 3 1 22.323784282334028 
+
+0.46995433291304134 clinton bush 22 11 0 0 
+
+0.26906911759852503 clinton gore 22 3 0 0 
+
+1.0000000000000002 clinton clinton 22 22 0 0 
+
+0.32155703483945214 russia germany 7 7 0 0 
+
+0.23869801881466574 russia mexico 7 4 0 0 
+
+0.23869801881466574 mexico russia 4 7 0 0 
+
+-9999 duluth minnesota 0 7 0 0 
+
+-9999 duluth fargo 0 2 0 0 
+
+-9999 duluth paris 0 1 0 0 
+
+-9999 woman homemaker 14 0 0 0 
+
+-9999 man homemaker 32 0 0 0 
+
+0.148902470434031 woman surgeon 14 3 0 0 
+
+0.25149772741392845 man surgeon 32 3 0 0 
+
+0.1318760946791574 boy brave 8 1 0 0 
+
+0.11094003924504582 girl brave 9 1 0 0 
+
+0.21213203435596423 king queen 6 1 0 0 
+
+0.18854992778788648 king man 6 32 0 0 
+
+0.16641005886756874 king woman 6 14 0 0 
+
+0.11593472394004206 queen man 1 32 0 0 
+
+0.11766968108291041 queen woman 1 14 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.659633660386599 military officials 48 125 7 15.7503174204507 
+
+0.0 corrupt politician 2 1 0 0 
+
+0.6777692615535916 democrats republicans 39 53 7 17.2877415324085 
+
+0.41294237362601777 human rights 16 22 7 19.84163258719665 
+
+-9999 new advancement 242 0 0 0 
+
+0.4019587385410113 election results 22 8 0 0 
+
+0.24365036737045329 union workers 24 20 0 0 
+
+-9999 fire wildfire 12 0 0 0 
+
+0.2581988897471611 ocean sea 2 1 0 0 
+
+-9999 spiderman batman 0 0 0 0 
+
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 2, Corpus Size = 1000000 
+
+0.01928433196350193 line cord 344 1 0 0 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line queue 344 0 0 0 
+
+0.31980280329098365 line text 344 48 0 0 
+
+0.43470836203596497 car automobile 236 12 0 0 
+
+0.0 swedish finnish 8 1 0 0 
+
+0.19948893144653213 scientific interest 33 239 0 0 
+
+0.0 abdullah shah 8 4 0 0 
+
+0.23026880383161352 baseball football 63 129 1 12.505202104853172 
+
+0.23901088316934377 baseball soccer 63 38 0 0 
+
+0.5120004416743633 clinton bush 210 99 1 11.150107146030608 
+
+0.4627853643385269 clinton gore 210 18 0 0 
+
+1.0000000000000002 clinton clinton 210 210 0 0 
+
+0.7048734828495841 russia germany 46 49 0 0 
+
+0.6373852737680429 russia mexico 46 128 0 0 
+
+0.6373852737680429 mexico russia 128 46 0 0 
+
+-9999 duluth minnesota 0 25 0 0 
+
+-9999 duluth fargo 0 8 0 0 
+
+-9999 duluth paris 0 28 0 0 
+
+0.350646854219839 woman homemaker 200 1 0 0 
+
+0.30688162237264743 man homemaker 417 1 0 0 
+
+0.39160842474073326 woman surgeon 200 17 0 0 
+
+0.38118292281494986 man surgeon 417 17 0 0 
+
+0.3985405706652278 boy brave 58 6 0 0 
+
+0.23487238380622066 girl brave 125 6 0 0 
+
+0.24190402077390108 king queen 110 14 2 15.904994648194078 
+
+0.33576032697500946 king man 110 417 0 0 
+
+0.36146255142820705 king woman 110 200 0 0 
+
+0.201482398460747 queen man 14 417 0 0 
+
+0.19466570535691505 queen woman 14 200 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.520370253599583 military officials 542 1003 31 11.395650662197163 
+
+0.21922626879807236 corrupt politician 21 21 0 0 
+
+0.834947086847863 democrats republicans 233 313 14 13.146859214247046 
+
+0.16429353414223402 human rights 162 249 69 16.302381805601804 
+
+0.01839590920463876 new advancement 2009 1 0 0 
+
+0.29837071612930705 election results 183 373 2 10.434977625237062 
+
+0.5183451876266443 union workers 174 167 1 10.66706149545356 
+
+0.0 fire wildfire 195 1 0 0 
+
+0.12379364174923314 ocean sea 48 75 0 0 
+
+0.0 spiderman batman 1 5 0 0 
+
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 5, Corpus Size = 1000000 
+
+0.06599535986438355 line cord 344 1 0 0 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line queue 344 0 0 0 
+
+0.5836822945089272 line text 344 48 0 0 
+
+0.4301778910457104 car automobile 236 12 0 0 
+
+0.0 swedish finnish 8 1 0 0 
+
+0.44768827914553555 scientific interest 33 239 0 0 
+
+0.0167506302543202 abdullah shah 8 4 0 0 
+
+0.6206170031133322 baseball football 63 129 1 12.505202104853172 
+
+0.48711373675164243 baseball soccer 63 38 2 15.268501846832839 
+
+0.6849689934296246 clinton bush 210 99 2 12.15010714603061 
+
+0.5623210189321518 clinton gore 210 18 0 0 
+
+1.0 clinton clinton 210 210 0 0 
+
+0.6848504440988127 russia germany 46 49 0 0 
+
+0.7295259038886897 russia mexico 46 128 0 0 
+
+0.7295259038886897 mexico russia 128 46 0 0 
+
+-9999 duluth minnesota 0 25 0 0 
+
+-9999 duluth fargo 0 8 0 0 
+
+-9999 duluth paris 0 28 0 0 
+
+0.39575903162938564 woman homemaker 200 1 0 0 
+
+0.24562005754028665 man homemaker 417 1 0 0 
+
+0.3939252406260709 woman surgeon 200 17 0 0 
+
+0.45713276702165534 man surgeon 417 17 0 0 
+
+0.35070679545925054 boy brave 58 6 0 0 
+
+0.3203000475171789 girl brave 125 6 0 0 
+
+0.4016839670295033 king queen 110 14 2 15.904994648194078 
+
+0.5738609293217686 king man 110 417 0 0 
+
+0.5571528211428027 king woman 110 200 0 0 
+
+0.4580248555749812 queen man 14 417 0 0 
+
+0.39878951021087694 queen woman 14 200 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.8144997794311081 military officials 542 1003 32 11.44145435181029 
+
+0.3623983496190239 corrupt politician 21 21 0 0 
+
+0.9129221288283446 democrats republicans 233 313 19 13.58743180563303 
+
+0.5430833867896717 human rights 162 249 69 16.302381805601804 
+
+0.07343319470668533 new advancement 2009 1 1 14.52144743504305 
+
+0.5236640692371516 election results 183 373 2 10.434977625237062 
+
+0.7575478994396204 union workers 174 167 1 10.66706149545356 
+
+0.1990335161249143 fire wildfire 195 1 0 0 
+
+0.44228202041261877 ocean sea 48 75 0 0 
+
+0.0 spiderman batman 1 5 0 0 
+
+
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 2, Corpus Size = 47246669 
+
+0.40796112384286803 line cord 11646 192 0 0 
+
+0.41661818157874403 line queue 11646 101 2 6.3279508975897265 
+
+0.49541734011011745 line text 11646 2229 2 1.8639814790817681 
+
+0.47692022932980077 car automobile 12908 398 0 0 
+
+0.21448419172115496 swedish finnish 874 226 0 0 
+
+0.4122722054295395 scientific interest 1548 8563 8 4.833618917503037 
+
+0.32997608309436927 abdullah shah 339 346 4 10.653939593003273 
+
+0.7006425672172836 baseball football 1676 6920 8 5.026346527552902 
+
+0.6801894452265389 baseball soccer 1676 1289 4 6.4508663017153385 
+
+0.728405285691895 clinton bush 5998 4442 10 4.148377894247982 
+
+0.6217741675452033 clinton gore 5998 406 16 8.278107559722423 
+
+0.9999999999999998 clinton clinton 5998 5998 4 2.39317767003886 
+
+0.8986725452012287 russia germany 4156 4607 20 5.625045557155281 
+
+0.8148794044898967 russia mexico 4156 4671 9 4.453138616514249 
+
+0.8148794044898967 mexico russia 4671 4156 12 4.8681761157930925 
+
+0.03752067210518566 duluth minnesota 196 1843 0 0 
+
+0.04314205313973118 duluth fargo 196 472 0 0 
+
+0.039720144904047565 duluth paris 196 3120 0 0 
+
+0.326529474668695 woman homemaker 11432 63 3 7.620601659901765 
+
+0.4101156069765418 man homemaker 24662 63 0 0 
+
+0.2623751108045612 woman surgeon 11432 657 0 0 
+
+0.29088401570352995 man surgeon 24662 657 0 0 
+
+0.47079738814602484 boy brave 3376 474 0 0 
+
+0.43447104283407567 girl brave 5805 474 0 0 
+
+0.614000467733801 king queen 6014 1327 20 6.887575570719507 
+
+0.4629122156249103 king man 6014 24662 0 0 
+
+0.38393239311295135 king woman 6014 11432 0 0 
+
+0.4137971910854605 queen man 1327 24662 0 0 
+
+0.33560357364018095 queen woman 1327 11432 0 0 
+
+-9999 babbage lovelace 0 8 0 0 
+
+0.5729852554602202 military officials 16885 30120 568 5.721567694826893 
+
+0.33158457406007635 corrupt politician 745 1342 0 0 
+
+0.8793601605428459 democrats republicans 8331 13094 348 7.235760553496548 
+
+0.06276872923657827 human rights 7806 21904 2463 9.410635717578451 
+
+0.1254388621785686 new advancement 140732 228 0 0 
+
+0.5680522928132247 election results 8700 9938 174 6.571113267451506 
+
+0.7767785019625478 union workers 8208 8313 29 4.327721767094286 
+
+0.23770345203866705 fire wildfire 9677 31 0 0 
+
+0.5726243307090282 ocean sea 1839 3878 0 0 
+
+0.25107164022103806 spiderman batman 47 137 0 0 
+
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 5, Corpus Size = 47246669 
+
+0.642351397120903 line cord 11646 192 0 0 
+
+0.6704532050449413 line queue 11646 101 2 6.3279508975897265 
+
+0.7954882289681949 line text 11646 2229 2 1.8639814790817681 
+
+0.6975273256445301 car automobile 12908 398 4 5.20110680074575 
+
+0.4924484544894633 swedish finnish 874 226 0 0 
+
+0.739307176957037 scientific interest 1548 8563 16 5.8336189175030375 
+
+0.6089914466982423 abdullah shah 339 346 4 10.653939593003273 
+
+0.8756013020934832 baseball football 1676 6920 8 5.026346527552902 
+
+0.8414318187155734 baseball soccer 1676 1289 12 8.035828802436495 
+
+0.8844986201466896 clinton bush 5998 4442 50 6.470305989135345 
+
+0.7593716994229548 clinton gore 5998 406 16 8.278107559722423 
+
+1.0 clinton clinton 5998 5998 20 4.715105764926223 
+
+0.9349034041390477 russia germany 4156 4607 84 7.695434885046679 
+
+0.9016910995668181 russia mexico 4156 4671 9 4.453138616514249 
+
+0.9016910995668181 mexico russia 4671 4156 14 5.09056853712954 
+
+0.16556951663363945 duluth minnesota 196 1843 0 0 
+
+0.1782735642401744 duluth fargo 196 472 0 0 
+
+0.24616281849997457 duluth paris 196 3120 0 0 
+
+0.46238978306033157 woman homemaker 11432 63 3 7.620601659901765 
+
+0.4528656711827324 man homemaker 24662 63 0 0 
+
+0.49906232554695223 woman surgeon 11432 657 0 0 
+
+0.5402434241790339 man surgeon 24662 657 0 0 
+
+0.7682059774720892 boy brave 3376 474 0 0 
+
+0.6796752785442084 girl brave 5805 474 0 0 
+
+0.8201289995641786 king queen 6014 1327 36 7.735572477274458 
+
+0.7995778559971167 king man 6014 24662 14 2.156952871817218 
+
+0.7081303276645485 king woman 6014 11432 2 0.45880993010652144 
+
+0.7525922806798581 queen man 1327 24662 0 0 
+
+0.6905654668895185 queen woman 1327 11432 0 0 
+
+-9999 babbage lovelace 0 8 0 0 
+
+0.8366082106855555 military officials 16885 30120 657 5.93157013564454 
+
+0.6301332645757157 corrupt politician 745 1342 0 0 
+
+0.9317332711487579 democrats republicans 8331 13094 528 7.837211177006273 
+
+0.3862085002143016 human rights 7806 21904 2499 9.431569991166194 
+
+0.4786391121128196 new advancement 140732 228 10 3.8801564805196023 
+
+0.7825888519271925 election results 8700 9938 192 6.713132272323933 
+
+0.918312623189425 union workers 8208 8313 57 5.302630786131456 
+
+0.47673592076951327 fire wildfire 9677 31 0 0 
+
+0.8633987832953288 ocean sea 1839 3878 2 3.7279064312576105 
+
+0.2656861103953782 spiderman batman 47 137 0 0 
+

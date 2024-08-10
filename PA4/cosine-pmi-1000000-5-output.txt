@@ -1,0 +1,85 @@
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 5, Corpus Size = 1000000 
+
+0.06599535986438355 line cord 344 1 0 0 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line queue 344 0 0 0 
+
+0.5836822945089272 line text 344 48 0 0 
+
+0.4301778910457104 car automobile 236 12 0 0 
+
+0.0 swedish finnish 8 1 0 0 
+
+0.44768827914553555 scientific interest 33 239 0 0 
+
+0.0167506302543202 abdullah shah 8 4 0 0 
+
+0.6206170031133322 baseball football 63 129 1 12.505202104853172 
+
+0.48711373675164243 baseball soccer 63 38 2 15.268501846832839 
+
+0.6849689934296246 clinton bush 210 99 2 12.15010714603061 
+
+0.5623210189321518 clinton gore 210 18 0 0 
+
+1.0 clinton clinton 210 210 0 0 
+
+0.6848504440988127 russia germany 46 49 0 0 
+
+0.7295259038886897 russia mexico 46 128 0 0 
+
+0.7295259038886897 mexico russia 128 46 0 0 
+
+-9999 duluth minnesota 0 25 0 0 
+
+-9999 duluth fargo 0 8 0 0 
+
+-9999 duluth paris 0 28 0 0 
+
+0.39575903162938564 woman homemaker 200 1 0 0 
+
+0.24562005754028665 man homemaker 417 1 0 0 
+
+0.3939252406260709 woman surgeon 200 17 0 0 
+
+0.45713276702165534 man surgeon 417 17 0 0 
+
+0.35070679545925054 boy brave 58 6 0 0 
+
+0.3203000475171789 girl brave 125 6 0 0 
+
+0.4016839670295033 king queen 110 14 2 15.904994648194078 
+
+0.5738609293217686 king man 110 417 0 0 
+
+0.5571528211428027 king woman 110 200 0 0 
+
+0.4580248555749812 queen man 14 417 0 0 
+
+0.39878951021087694 queen woman 14 200 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.8144997794311081 military officials 542 1003 32 11.44145435181029 
+
+0.3623983496190239 corrupt politician 21 21 0 0 
+
+0.9129221288283446 democrats republicans 233 313 19 13.58743180563303 
+
+0.5430833867896717 human rights 162 249 69 16.302381805601804 
+
+0.07343319470668533 new advancement 2009 1 1 14.52144743504305 
+
+0.5236640692371516 election results 183 373 2 10.434977625237062 
+
+0.7575478994396204 union workers 174 167 1 10.66706149545356 
+
+0.1990335161249143 fire wildfire 195 1 0 0 
+
+0.44228202041261877 ocean sea 48 75 0 0 
+
+0.0 spiderman batman 1 5 0 0 
+
+

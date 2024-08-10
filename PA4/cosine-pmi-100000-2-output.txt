@@ -1,0 +1,84 @@
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 2, Corpus Size = 100000 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line cord 37 0 0 0 
+
+-9999 line queue 37 0 0 0 
+
+0.08660254037844385 line text 37 4 0 0 
+
+0.29814239699997197 car automobile 28 1 0 0 
+
+-9999 swedish finnish 1 0 0 0 
+
+0.1033622788243404 scientific interest 6 31 0 0 
+
+-9999 abdullah shah 0 0 0 0 
+
+0.0601929265428846 baseball football 3 17 0 0 
+
+0.16666666666666669 baseball soccer 3 3 0 0 
+
+0.4050462936504913 clinton bush 22 11 0 0 
+
+0.2672612419124244 clinton gore 22 3 0 0 
+
+1.0 clinton clinton 22 22 0 0 
+
+0.24514516892273006 russia germany 7 7 0 0 
+
+0.0 russia mexico 7 4 0 0 
+
+0.0 mexico russia 4 7 0 0 
+
+-9999 duluth minnesota 0 7 0 0 
+
+-9999 duluth fargo 0 2 0 0 
+
+-9999 duluth paris 0 1 0 0 
+
+-9999 woman homemaker 14 0 0 0 
+
+-9999 man homemaker 32 0 0 0 
+
+0.1203858530857692 woman surgeon 14 3 0 0 
+
+0.1147078669352809 man surgeon 32 3 0 0 
+
+0.0 boy brave 8 1 0 0 
+
+0.15811388300841897 girl brave 9 1 0 0 
+
+0.0 king queen 6 1 0 0 
+
+0.05006261743217589 king man 6 32 0 0 
+
+0.03940552031195503 king woman 6 14 0 0 
+
+0.0 queen man 1 32 0 0 
+
+0.0 queen woman 1 14 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.40456998550119533 military officials 48 125 7 15.7503174204507 
+
+0.0 corrupt politician 2 1 0 0 
+
+0.5020692091869888 democrats republicans 39 53 4 16.480386610350894 
+
+0.24287224646833394 human rights 16 22 7 19.84163258719665 
+
+-9999 new advancement 242 0 0 0 
+
+0.3432032364918221 election results 22 8 0 0 
+
+0.12309149097933272 union workers 24 20 0 0 
+
+-9999 fire wildfire 12 0 0 0 
+
+0.0 ocean sea 2 1 0 0 
+
+-9999 spiderman batman 0 0 0 0 
+

@@ -1,0 +1,987 @@
+'''
+Written by: Alicia John
+Date: 12/10/20
+
+Overall - This is a program that takes the MCTEST by employing a sliding window in both modes and Part 
+od Speech Tagging and Named Entities recognition in mode 1. The program will pick an answer based 
+on the Answer with the highest score. 
+
+Example - 
+A A A A
+
+
+
+Algorithm - 
+PRE PROCESSING:
+This program separates the file by tests by newlines. Then each test are separated 
+by tabs. The story is keepp and the questions and answers are kept. The question and answers
+are kept togeter using a dictionary. 
+
+SLIDING WINDOW 
+
+The sliding window size is determined by adding together the word count in the question and the answer it is
+currently analyzing. The unique words in the question and answers are kept together in a list.
+The sliding window looks at the story and it matches every word in the window with the 
+unique words. That window is then assigned a score based on the words that are matched.
+The score the answer is assigned is based on the window with the highest score.
+
+MODE 1
+ This mode will add to the score the answer is assigned from the sliding window.
+ This will analyze the words in the question and answer and add points to the score based 
+ on if all the criteria matched. 
+'''
+import re
+import sys
+import math
+import spacy
+
+def main(argv): 
+    mode = sys.argv[1] # GET mode
+    sysfile = sys.argv[2] # GET data files
+    f = open(sysfile, "r")
+    data = f.read()
+    #data.lower()
+    Parser(mode, data) # Parser function that picks an answer for each question
+
+def Parser(mode,data):
+    questions = data.split("\n")
+    del questions[-1]
+    for q in questions: # For each test
+        questions = dict()
+        story = list()
+        allAnswers = list()
+        temp = q.split("\t")
+        story = temp[2] # The save the story
+        story = re.sub(r'([.?,!-]+)', "", story)# removes puncuation for the story
+        story = story.split()
+        i = 3
+        while( i < len(temp)): # for every item in the list after the 2 index
+            options = list()
+            question = temp[i] # Assgin the question
+            question = re.sub(r'([?]+)', "", question) # Removes the question mark form the story
+            for j in range(4): # the next four are the answer to the question
+                i +=1 
+                options.append(temp[i])
+            questions[question] = options
+            i +=1
+        for key in questions: # For each question
+            trueScore = list()
+            for ans in questions[key]: #For each answer
+                allScores = list()
+                window = 0
+                i=0
+                endindex = 0
+                slideWords = key + " " + ans # Combines question and answer string
+                slideWords = slideWords.split()
+                window  = len(slideWords) # Gets the number of words to create the sliding window size
+                uniqueSlideWordes = set(slideWords) # Get all unique words
+                for i in range(len(story)): #Goes through the story
+                    j=0
+                    j = i 
+                    endindex = j + window  -1 # End index is the current first index + window size -1
+                    score = 0        
+                    if endindex < (len(story)): # Goes until the endindex is = the number of words in the story
+                        while j < (endindex): # Goes through each word in the current window
+                            c = 0
+                            if story[j] in uniqueSlideWordes:
+                                c = story.count(story[j])
+                                score += math.log2(1 + (1/c)) # If a matched word is found add to the score
+                            j += 1
+                    allScores.append(score) # Keep the window score
+                assignedScore = max(allScores) # Get the windoe wit the highest score
+                if(mode == "1"):
+                    #POS TAGGING
+                    sp = spacy.load('en_core_web_sm')
+                    ansTag = sp(ans)
+                    questionTag = sp(key)
+                    if("What" in key): # If what is in the question and the answer contains a noun increase the score
+                      for t in range(len(ansTag)):
+                             if((ansTag[t].tag_ == "NN") or ansTag[t].tag_ == "NNS"):
+                                assignedScore += .3
+                    elif(("Who" in key) or ("Where" in key)):# If who or where is in the question and the answer contains a proper noun increase the score
+                        for t in range(len(ansTag)):
+                            if((ansTag[t].tag_ == "NNP")):
+                                assignedScore += .3
+                            if((ansTag[t].ent_type_ == "LOC") and ("Where" in key)): # Named Entity is a Location 
+                                assignedScore += .1
+                            if(((ansTag[t].ent_type_ == "PERSON") or (ansTag[t].ent_type_ == "ORG"))  and ("Who" in key)):  # Named Entity is a Person or ORG
+                                assignedScore += .1
+                    elif(("many" in key) or ("old" in key)):
+                        for t in range(len(ansTag)):
+                            if((ansTag[t].tag_ == "CD")):
+                               assignedScore += .3
+                    #Named entites
+                    #If the question contains a person and the answer contains a he or she increase the score
+                    for r in range(len(questionTag)):
+                        if(questionTag[r].ent_type_ == "PERSON"):
+                            for t in range(len(ansTag)):
+                                if(("He" in ans) or ("he" in ans) or ("She" in ans) or ("She" in ans)):
+                                    assignedScore += .1
+                        
+                trueScore.append(assignedScore) # All score for each answer
+            answerIndex = trueScore.index(max(trueScore)) # Gets the index of the score with the highest answer
+            answer = ""
+            if(answerIndex == int(0)):
+                answer = "A"
+            elif(answerIndex == int(1)):
+                answer = "B"
+            elif(answerIndex == int(2)):
+                answer = "C"
+            elif(answerIndex == int(3)):
+                answer = "D"
+            else:
+                answer = "void"
+            allAnswers.append(answer)
+        print("%s\t%s\t%s\t%s\r" % (allAnswers[0], allAnswers[1], allAnswers[2], allAnswers[3]))
+
+
+
+main(sys.argv)
+'''
+Written by:Alicia John
+Date: 12/10/20
+
+Overall - This program compares the answers from the programs and the gold answers
+to see the accuracy of the MCTEST program
+
+Example -
+A A A A | A B C A | 2
+
+Algorithm - This program goes by test by test to see how many answers are incorrect in the question 
+and keeps track of how many answers are correct overall.
+'''
+import sys
+
+def main(argv):
+    ansFile = sys.argv[1]
+    goldFile = sys.argv[2]
+    f = open(ansFile, "r")
+    ans = f.read()
+    f = open(goldFile, "r")
+    gold = f.read()
+    ans = ans.split("\n")
+    gold = gold.split("\n")
+    del ans[-1]
+    del gold[-1]
+    total = 0
+    correct = 0
+    for i in range(len(gold)):
+        #print(i)
+        anscom = ans[i].split("\t")
+        goldcom = gold[i].split("\t")
+        incorrect = 0
+        for j in range(4):
+            total += 1
+            if (anscom[j] is goldcom[j]):
+                #print(total)
+                correct += 1
+            else:
+                incorrect += 1
+        print("%s | %s | %s \n" % (str(gold[i]),str(ans[i]),incorrect))
+    print(correct/total)
+
+
+main(sys.argv)A	A	C	B | A	A	C	A | 1 
+
+B	A	A	C | B	C	B	C | 2 
+
+A	B	B	A | C	C	B	A | 2 
+
+C	C	A	C | C	C	B	C | 1 
+
+A	A	A	A | A	A	A	B | 1 
+
+A	C	B	C | D	D	C	A | 4 
+
+C	B	B	C | C	A	A	C | 2 
+
+D	A	A	A | C	A	A	A | 1 
+
+B	B	D	C | B	A	A	C | 2 
+
+C	D	A	A | D	D	B	B | 3 
+
+C	C	C	D | A	B	B	A | 4 
+
+A	B	D	C | D	C	A	C | 3 
+
+B	C	C	D | A	A	A	D | 3 
+
+B	C	C	C | A	A	B	C | 3 
+
+A	D	A	B | A	A	A	B | 1 
+
+B	C	A	D | B	C	D	D | 1 
+
+A	C	D	B | A	C	D	B | 0 
+
+D	A	A	D | C	A	A	B | 2 
+
+A	C	C	C | A	B	A	C | 2 
+
+C	C	A	B | C	D	B	B | 2 
+
+D	D	B	C | A	D	B	C | 1 
+
+B	D	C	C | C	D	C	A | 2 
+
+A	B	C	A | A	B	C	C | 1 
+
+D	D	D	A | A	A	D	A | 2 
+
+B	C	C	B | C	B	A	B | 3 
+
+C	A	B	C | A	A	C	A | 3 
+
+D	C	D	B | C	A	D	A | 3 
+
+D	B	D	C | A	B	D	C | 1 
+
+A	D	C	B | A	C	C	A | 2 
+
+A	D	B	D | A	D	B	B | 1 
+
+C	C	D	C | C	C	A	C | 1 
+
+B	C	B	A | B	D	A	A | 2 
+
+B	D	D	A | A	C	D	C | 3 
+
+C	A	B	B | C	C	D	D | 3 
+
+D	A	D	C | D	B	A	C | 2 
+
+C	A	A	D | A	A	B	A | 3 
+
+C	D	D	A | D	D	D	A | 1 
+
+A	A	A	B | A	B	A	B | 1 
+
+B	D	A	D | A	D	A	D | 1 
+
+A	B	C	B | A	B	A	B | 1 
+
+D	A	D	D | A	C	D	D | 2 
+
+A	C	C	B | B	C	C	B | 1 
+
+B	B	C	D | A	C	D	A | 4 
+
+A	C	B	C | A	A	C	D | 3 
+
+A	B	D	B | A	A	A	A | 3 
+
+B	D	A	A | B	D	A	D | 1 
+
+B	A	C	C | B	A	C	C | 0 
+
+B	B	B	C | B	A	A	C | 2 
+
+A	B	B	B | A	B	A	D | 2 
+
+A	A	B	A | A	C	C	B | 3 
+
+0.51
+A	A	C	B | A	A	C	A | 1 
+
+B	A	A	C | B	C	B	C | 2 
+
+A	B	B	A | C	C	B	A | 2 
+
+C	C	A	C | C	C	B	C | 1 
+
+A	A	A	A | A	A	A	B | 1 
+
+A	C	B	C | D	D	C	A | 4 
+
+C	B	B	C | C	A	A	C | 2 
+
+D	A	A	A | C	A	A	A | 1 
+
+B	B	D	C | B	A	A	C | 2 
+
+C	D	A	A | D	D	B	B | 3 
+
+C	C	C	D | A	B	B	A | 4 
+
+A	B	D	C | D	C	A	C | 3 
+
+B	C	C	D | A	A	A	D | 3 
+
+B	C	C	C | A	A	B	C | 3 
+
+A	D	A	B | A	A	A	B | 1 
+
+B	C	A	D | B	C	D	D | 1 
+
+A	C	D	B | A	C	D	B | 0 
+
+D	A	A	D | C	A	A	B | 2 
+
+A	C	C	C | A	B	A	C | 2 
+
+C	C	A	B | C	D	B	B | 2 
+
+D	D	B	C | A	D	B	C | 1 
+
+B	D	C	C | C	D	C	A | 2 
+
+A	B	C	A | A	B	C	C | 1 
+
+D	D	D	A | A	A	D	A | 2 
+
+B	C	C	B | C	B	A	B | 3 
+
+C	A	B	C | A	A	C	A | 3 
+
+D	C	D	B | C	A	D	A | 3 
+
+D	B	D	C | A	B	D	C | 1 
+
+A	D	C	B | A	C	C	A | 2 
+
+A	D	B	D | A	D	B	B | 1 
+
+C	C	D	C | C	C	A	C | 1 
+
+B	C	B	A | B	D	A	A | 2 
+
+B	D	D	A | A	C	D	C | 3 
+
+C	A	B	B | C	C	D	D | 3 
+
+D	A	D	C | D	B	A	C | 2 
+
+C	A	A	D | A	A	B	A | 3 
+
+C	D	D	A | D	D	D	A | 1 
+
+A	A	A	B | A	B	A	B | 1 
+
+B	D	A	D | A	D	A	D | 1 
+
+A	B	C	B | A	B	A	B | 1 
+
+D	A	D	D | A	C	D	D | 2 
+
+A	C	C	B | B	C	C	B | 1 
+
+B	B	C	D | A	C	D	A | 4 
+
+A	C	B	C | A	A	C	D | 3 
+
+A	B	D	B | A	A	A	A | 3 
+
+B	D	A	A | B	D	A	D | 1 
+
+B	A	C	C | B	A	C	C | 0 
+
+B	B	B	C | B	A	A	C | 2 
+
+A	B	B	B | A	B	A	D | 2 
+
+A	A	B	A | A	C	C	B | 3 
+
+0.51
+D	C	C	B | B	A	A	B | 3 
+
+A	B	A	D | D	B	A	D | 1 
+
+B	C	A	D | B	C	A	D | 0 
+
+B	D	D	C | C	A	D	A | 3 
+
+D	C	A	B | B	C	C	A | 3 
+
+B	A	B	C | B	A	A	B | 2 
+
+D	A	A	D | C	A	A	D | 1 
+
+B	D	A	A | A	A	A	B | 3 
+
+D	B	D	D | D	A	A	D | 2 
+
+D	D	B	A | A	D	D	A | 2 
+
+A	A	D	B | A	A	D	B | 0 
+
+D	A	B	A | D	C	A	A | 2 
+
+C	A	D	D | A	B	D	B | 3 
+
+B	B	D	B | B	B	D	B | 0 
+
+C	C	C	D | C	C	A	B | 2 
+
+C	D	C	B | A	D	B	B | 2 
+
+B	A	D	C | D	B	A	C | 3 
+
+B	A	A	B | B	D	D	A | 3 
+
+D	B	B	C | A	A	B	A | 3 
+
+C	B	C	D | A	B	A	D | 2 
+
+D	A	B	B | C	A	A	B | 2 
+
+A	C	D	C | B	C	D	C | 1 
+
+B	B	D	A | B	D	B	B | 3 
+
+C	D	B	B | C	C	A	D | 3 
+
+D	B	A	D | D	C	C	B | 3 
+
+B	C	C	A | B	C	B	A | 1 
+
+C	B	C	D | A	A	C	A | 3 
+
+D	A	C	D | D	A	A	D | 1 
+
+B	B	B	A | B	B	A	A | 1 
+
+A	D	A	C | C	A	A	C | 2 
+
+B	B	B	C | D	B	B	D | 2 
+
+A	A	B	A | A	B	A	A | 2 
+
+C	D	D	A | A	A	D	B | 3 
+
+A	D	D	A | A	C	D	D | 2 
+
+B	D	D	A | C	C	A	A | 3 
+
+A	C	D	D | C	C	B	D | 2 
+
+B	A	C	D | B	A	A	A | 2 
+
+C	A	C	A | A	D	B	A | 3 
+
+B	D	A	C | B	D	D	A | 2 
+
+C	C	C	D | C	C	A	B | 2 
+
+C	D	C	D | B	D	A	A | 3 
+
+D	C	B	C | C	C	A	D | 3 
+
+D	D	C	D | C	D	A	A | 3 
+
+B	B	A	C | A	A	A	C | 2 
+
+A	A	B	D | D	A	B	C | 2 
+
+B	C	C	A | B	C	B	A | 1 
+
+D	D	D	D | D	A	D	D | 1 
+
+C	A	C	D | A	A	C	B | 2 
+
+C	D	B	B | A	D	B	C | 2 
+
+C	A	A	D | D	A	B	D | 2 
+
+A	A	D	D | A	A	C	A | 2 
+
+C	A	C	C | D	C	A	B | 4 
+
+B	B	C	C | B	B	C	A | 1 
+
+A	A	A	B | D	D	A	A | 3 
+
+C	B	A	B | D	B	A	B | 1 
+
+B	B	A	C | D	A	A	D | 3 
+
+C	D	A	D | C	A	A	D | 1 
+
+C	A	C	C | A	A	C	A | 2 
+
+D	C	D	B | D	C	D	A | 1 
+
+A	C	B	A | A	A	B	A | 1 
+
+A	C	B	A | C	A	D	B | 4 
+
+D	C	D	A | A	B	D	C | 3 
+
+C	C	D	C | A	A	B	C | 3 
+
+A	C	D	B | A	C	A	B | 1 
+
+C	C	D	B | C	A	D	A | 2 
+
+A	B	B	A | A	D	B	D | 2 
+
+B	C	D	A | C	C	C	A | 2 
+
+D	B	B	D | A	A	B	A | 3 
+
+C	C	D	B | A	A	A	A | 4 
+
+A	D	B	C | A	A	B	C | 1 
+
+D	C	D	C | D	D	A	D | 3 
+
+A	D	C	B | A	D	C	B | 0 
+
+A	B	C	D | D	A	C	D | 2 
+
+A	D	D	B | D	B	A	A | 4 
+
+B	A	A	A | C	D	B	A | 3 
+
+A	D	A	C | B	A	D	B | 4 
+
+C	B	D	D | D	A	D	A | 3 
+
+D	C	A	D | D	A	D	D | 2 
+
+B	D	A	A | C	D	D	D | 3 
+
+D	D	C	D | A	D	C	A | 2 
+
+A	B	A	B | A	A	A	A | 2 
+
+B	D	B	C | A	A	D	C | 3 
+
+D	B	D	A | D	B	A	A | 1 
+
+C	C	D	C | A	D	B	C | 3 
+
+B	A	D	B | B	A	D	B | 0 
+
+A	A	B	A | A	B	B	A | 1 
+
+D	D	B	C | A	C	A	C | 3 
+
+A	D	D	B | C	D	B	B | 2 
+
+B	C	D	B | B	C	A	A | 2 
+
+B	B	A	A | A	B	D	A | 2 
+
+D	C	D	D | D	A	D	B | 2 
+
+A	B	C	C | C	B	B	A | 3 
+
+B	A	D	A | B	D	B	A | 2 
+
+C	D	B	D | A	A	D	D | 3 
+
+C	A	C	B | A	A	A	A | 3 
+
+A	C	D	B | A	C	A	A | 2 
+
+A	B	D	D | A	D	B	B | 3 
+
+C	A	B	A | D	A	C	C | 3 
+
+B	B	B	D | B	A	B	A | 2 
+
+D	B	B	A | D	B	B	D | 1 
+
+D	D	D	D | A	A	A	D | 3 
+
+D	B	C	D | B	A	C	C | 3 
+
+D	D	C	D | D	A	C	A | 2 
+
+C	C	B	B | C	A	D	B | 2 
+
+D	C	A	A | A	A	A	A | 2 
+
+C	A	D	C | B	B	D	C | 2 
+
+C	C	A	B | C	C	A	C | 1 
+
+B	D	D	D | A	C	D	A | 3 
+
+A	D	A	A | A	D	A	C | 1 
+
+D	A	D	A | D	B	B	A | 2 
+
+A	A	C	A | A	D	C	A | 1 
+
+C	C	B	A | D	A	A	A | 3 
+
+C	B	B	A | A	C	A	D | 4 
+
+B	D	A	A | D	D	A	B | 2 
+
+D	A	C	D | C	D	A	D | 3 
+
+B	B	D	B | A	B	D	A | 2 
+
+A	B	D	B | A	B	D	B | 0 
+
+A	D	C	C | A	B	C	D | 2 
+
+C	B	D	B | A	C	C	D | 4 
+
+C	B	C	C | A	A	C	A | 3 
+
+B	B	C	D | A	A	B	D | 3 
+
+D	B	D	A | A	A	B	A | 3 
+
+D	A	B	C | D	A	A	C | 1 
+
+C	D	D	B | B	D	D	B | 1 
+
+C	D	B	C | A	D	B	B | 2 
+
+A	A	B	B | A	A	A	C | 2 
+
+A	C	A	D | A	C	D	B | 2 
+
+D	C	B	B | D	B	A	A | 3 
+
+A	B	A	A | A	A	C	A | 2 
+
+B	A	A	A | D	D	C	A | 3 
+
+D	C	D	D | D	A	A	A | 3 
+
+C	C	D	A | A	C	B	A | 2 
+
+C	D	A	B | A	D	C	B | 2 
+
+A	D	C	C | B	A	A	A | 4 
+
+D	C	D	A | D	B	D	C | 2 
+
+C	B	B	A | A	B	C	A | 2 
+
+A	B	A	C | B	D	D	C | 3 
+
+D	B	D	C | C	B	C	C | 2 
+
+C	D	B	B | C	A	B	A | 2 
+
+D	C	B	B | D	B	A	B | 2 
+
+D	D	C	B | D	D	C	A | 1 
+
+C	D	A	D | C	D	A	D | 0 
+
+C	C	D	D | A	A	B	A | 4 
+
+A	C	B	D | D	A	D	A | 4 
+
+D	B	B	C | D	B	A	C | 1 
+
+C	C	C	D | C	B	D	A | 3 
+
+B	A	C	B | B	C	C	C | 2 
+
+C	B	A	B | A	A	A	A | 3 
+
+C	A	A	B | D	A	A	B | 1 
+
+A	D	D	D | A	A	B	C | 3 
+
+0.45
+D	C	C	B | B	A	B	B | 3 
+
+A	B	A	D | B	B	A	D | 1 
+
+B	C	A	D | B	C	A	D | 0 
+
+B	D	D	C | C	A	D	D | 3 
+
+D	C	A	B | B	C	C	A | 3 
+
+B	A	B	C | D	D	A	C | 3 
+
+D	A	A	D | C	A	C	C | 3 
+
+B	D	A	A | A	B	A	B | 3 
+
+D	B	D	D | D	A	A	D | 2 
+
+D	D	B	A | A	D	D	A | 2 
+
+A	A	D	B | A	A	D	B | 0 
+
+D	A	B	A | D	C	C	A | 2 
+
+C	A	D	D | A	B	D	B | 3 
+
+B	B	D	B | B	A	D	B | 1 
+
+C	C	C	D | C	C	A	B | 2 
+
+C	D	C	B | A	D	B	B | 2 
+
+B	A	D	C | D	B	D	C | 2 
+
+B	A	A	B | B	D	C	B | 2 
+
+D	B	B	C | A	B	B	A | 2 
+
+C	B	C	D | A	B	A	D | 2 
+
+D	A	B	B | C	A	A	B | 2 
+
+A	C	D	C | B	C	D	C | 1 
+
+B	B	D	A | B	D	B	B | 3 
+
+C	D	B	B | C	C	B	D | 2 
+
+D	B	A	D | D	C	A	B | 2 
+
+B	C	C	A | B	C	B	A | 1 
+
+C	B	C	D | A	B	C	B | 2 
+
+D	A	C	D | D	A	B	D | 1 
+
+B	B	B	A | D	B	A	A | 2 
+
+A	D	A	C | D	A	A	C | 2 
+
+B	B	B	C | D	B	B	D | 2 
+
+A	A	B	A | A	B	A	C | 3 
+
+C	D	D	A | A	A	D	B | 3 
+
+A	D	D	A | A	C	D	D | 2 
+
+B	D	D	A | C	B	A	B | 4 
+
+A	C	D	D | C	C	B	D | 2 
+
+B	A	C	D | B	C	A	A | 3 
+
+C	A	C	A | A	C	B	A | 3 
+
+B	D	A	C | B	D	D	A | 2 
+
+C	C	C	D | C	C	A	B | 2 
+
+C	D	C	D | B	D	A	A | 3 
+
+D	C	B	C | A	C	A	D | 3 
+
+D	D	C	D | C	D	A	A | 3 
+
+B	B	A	C | B	D	A	C | 1 
+
+A	A	B	D | D	A	A	C | 3 
+
+B	C	C	A | B	C	B	B | 2 
+
+D	D	D	D | D	A	D	D | 1 
+
+C	A	C	D | B	A	C	B | 2 
+
+C	D	B	B | A	D	B	C | 2 
+
+C	A	A	D | D	A	B	D | 2 
+
+A	A	D	D | A	A	C	A | 2 
+
+C	A	C	C | D	C	B	B | 4 
+
+B	B	C	C | B	D	A	D | 3 
+
+A	A	A	B | D	D	A	A | 3 
+
+C	B	A	B | D	B	A	B | 1 
+
+B	B	A	C | D	A	A	A | 3 
+
+C	D	A	D | C	B	A	D | 1 
+
+C	A	C	C | A	A	C	A | 2 
+
+D	C	D	B | D	C	D	A | 1 
+
+A	C	B	A | A	A	B	A | 1 
+
+A	C	B	A | C	A	D	B | 4 
+
+D	C	D	A | A	B	D	C | 3 
+
+C	C	D	C | A	A	B	C | 3 
+
+A	C	D	B | A	C	A	B | 1 
+
+C	C	D	B | C	A	D	C | 2 
+
+A	B	B	A | A	A	B	D | 2 
+
+B	C	D	A | C	C	C	A | 2 
+
+D	B	B	D | A	A	B	A | 3 
+
+C	C	D	B | A	B	A	A | 4 
+
+A	D	B	C | A	A	B	C | 1 
+
+D	C	D	C | D	D	A	D | 3 
+
+A	D	C	B | A	D	C	B | 0 
+
+A	B	C	D | D	A	C	D | 2 
+
+A	D	D	B | D	A	A	A | 4 
+
+B	A	A	A | C	A	B	A | 2 
+
+A	D	A	C | B	A	D	B | 4 
+
+C	B	D	D | D	B	D	A | 2 
+
+D	C	A	D | D	A	D	D | 2 
+
+B	D	A	A | C	D	D	D | 3 
+
+D	D	C	D | D	D	C	A | 1 
+
+A	B	A	B | A	A	A	A | 2 
+
+B	D	B	C | A	B	D	C | 3 
+
+D	B	D	A | D	B	A	A | 1 
+
+C	C	D	C | A	D	B	A | 4 
+
+B	A	D	B | B	A	D	B | 0 
+
+A	A	B	A | A	B	B	A | 1 
+
+D	D	B	C | A	C	A	B | 4 
+
+A	D	D	B | C	D	B	B | 2 
+
+B	C	D	B | B	C	A	A | 2 
+
+B	B	A	A | D	B	D	A | 2 
+
+D	C	D	D | D	A	D	D | 1 
+
+A	B	C	C | C	D	B	A | 4 
+
+B	A	D	A | B	D	B	B | 3 
+
+C	D	B	D | B	A	D	D | 3 
+
+C	A	C	B | A	A	A	A | 3 
+
+A	C	D	B | D	C	A	A | 3 
+
+A	B	D	D | A	D	B	B | 3 
+
+C	A	B	A | D	A	C	C | 3 
+
+B	B	B	D | B	A	B	A | 2 
+
+D	B	B	A | D	B	B	D | 1 
+
+D	D	D	D | A	A	A	D | 3 
+
+D	B	C	D | B	A	C	C | 3 
+
+D	D	C	D | D	A	C	A | 2 
+
+C	C	B	B | C	A	D	B | 2 
+
+D	C	A	A | A	A	A	A | 2 
+
+C	A	D	C | B	B	D	C | 2 
+
+C	C	A	B | C	C	A	B | 0 
+
+B	D	D	D | A	B	D	A | 3 
+
+A	D	A	A | A	D	A	C | 1 
+
+D	A	D	A | D	B	B	B | 3 
+
+A	A	C	A | B	D	C	A | 2 
+
+C	C	B	A | D	A	A	A | 3 
+
+C	B	B	A | A	C	A	D | 4 
+
+B	D	A	A | D	D	A	B | 2 
+
+D	A	C	D | C	D	A	D | 3 
+
+B	B	D	B | D	D	D	A | 3 
+
+A	B	D	B | A	B	D	B | 0 
+
+A	D	C	C | A	B	C	D | 2 
+
+C	B	D	B | A	C	C	D | 4 
+
+C	B	C	C | A	A	C	A | 3 
+
+B	B	C	D | B	B	B	D | 1 
+
+D	B	D	A | A	A	B	A | 3 
+
+D	A	B	C | D	A	A	C | 1 
+
+C	D	D	B | B	D	D	B | 1 
+
+C	D	B	C | A	D	B	B | 2 
+
+A	A	B	B | A	A	A	C | 2 
+
+A	C	A	D | A	C	D	B | 2 
+
+D	C	B	B | D	B	A	A | 3 
+
+A	B	A	A | A	A	C	A | 2 
+
+B	A	A	A | D	D	C	A | 3 
+
+D	C	D	D | D	A	A	A | 3 
+
+C	C	D	A | A	C	B	A | 2 
+
+C	D	A	B | A	D	A	B | 1 
+
+A	D	C	C | B	A	A	A | 4 
+
+D	C	D	A | D	B	D	D | 2 
+
+C	B	B	A | A	B	C	A | 2 
+
+A	B	A	C | B	D	D	C | 3 
+
+D	B	D	C | C	B	C	C | 2 
+
+C	D	B	B | C	A	B	A | 2 
+
+D	C	B	B | D	B	A	B | 2 
+
+D	D	C	B | D	D	C	C | 1 
+
+C	D	A	D | C	D	A	D | 0 
+
+C	C	D	D | D	B	B	C | 4 
+
+A	C	B	D | D	A	B	B | 3 
+
+D	B	B	C | D	B	A	C | 1 
+
+C	C	C	D | C	B	D	A | 3 
+
+B	A	C	B | B	C	C	C | 2 
+
+C	B	A	B | A	A	A	A | 3 
+
+C	A	A	B | D	A	B	B | 2 
+
+A	D	D	D | A	A	B	C | 3 
+
+0.44166666666666665

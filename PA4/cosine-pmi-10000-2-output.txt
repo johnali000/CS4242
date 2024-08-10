@@ -1,0 +1,84 @@
+PA 4 computing similarity from a word by word PMI co-occurrence matrix, programmed by Alicia John. Tokens Size = 143777 , Window Size = 2, Corpus Size = 10000 
+
+similar-pmi.py:79: RuntimeWarning: invalid value encountered in true_divide
+  cosine = (vwsum/(math.sqrt(v2sum)*math.sqrt(w2sum)))
+-9999 line cord 4 0 0 0 
+
+-9999 line queue 4 0 0 0 
+
+-9999 line text 4 0 0 0 
+
+-9999 car automobile 2 0 0 0 
+
+-9999 swedish finnish 0 0 0 0 
+
+-9999 scientific interest 0 4 0 0 
+
+-9999 abdullah shah 0 0 0 0 
+
+-9999 baseball football 0 1 0 0 
+
+-9999 baseball soccer 0 0 0 0 
+
+0.2886751345948129 clinton bush 1 2 0 0 
+
+0.0 clinton gore 1 1 0 0 
+
+0.9999999999999998 clinton clinton 1 1 0 0 
+
+-9999 russia germany 1 0 0 0 
+
+0.0 russia mexico 1 2 0 0 
+
+0.0 mexico russia 2 1 0 0 
+
+-9999 duluth minnesota 0 0 0 0 
+
+-9999 duluth fargo 0 1 0 0 
+
+-9999 duluth paris 0 0 0 0 
+
+-9999 woman homemaker 0 0 0 0 
+
+-9999 man homemaker 0 0 0 0 
+
+-9999 woman surgeon 0 0 0 0 
+
+-9999 man surgeon 0 0 0 0 
+
+-9999 boy brave 0 0 0 0 
+
+-9999 girl brave 1 0 0 0 
+
+-9999 king queen 2 0 0 0 
+
+-9999 king man 2 0 0 0 
+
+-9999 king woman 2 0 0 0 
+
+-9999 queen man 0 0 0 0 
+
+-9999 queen woman 0 0 0 0 
+
+-9999 babbage lovelace 0 0 0 0 
+
+0.20619652471058064 military officials 6 16 0 0 
+
+-9999 corrupt politician 0 0 0 0 
+
+0.40824829046386296 democrats republicans 3 5 0 0 
+
+-9999 human rights 0 2 0 0 
+
+-9999 new advancement 28 0 0 0 
+
+-9999 election results 0 0 0 0 
+
+0.0 union workers 3 2 0 0 
+
+-9999 fire wildfire 1 0 0 0 
+
+-9999 ocean sea 0 0 0 0 
+
+-9999 spiderman batman 0 0 0 0 
+
